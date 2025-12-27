@@ -1,11 +1,8 @@
 // app/api/chat/route.ts
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from "@/lib/supabase/client";
-
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+import { getModel } from "@/lib/ai/model"; // <--- The new Factory
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 export async function POST(req: Request) {
   try {
@@ -16,21 +13,21 @@ export async function POST(req: Request) {
       .from('pr_history')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(10); // Fetch last 10 PRs for context
+      .limit(10); 
 
     if (error) {
       console.error("Database Error:", error);
       return NextResponse.json({ error: "Failed to fetch memory" }, { status: 500 });
     }
 
-    // 2. AUGMENTATION: Prepare the prompt with context
+    // 2. AUGMENTATION: Prepare context
     const context = history.map(pr => `
       [PR #${pr.pr_number} by ${pr.author}]
       Title: ${pr.title}
       Risk: ${pr.risk_score}
       Commit SHA: ${pr.commit_sha}
       Analysis: ${pr.analysis}
-      Code Diff Snippet: ${pr.diff_content.substring(0, 500)}... (truncated)
+      Code Diff Snippet: ${pr.diff_content ? pr.diff_content.substring(0, 500) : "No diff"}...
     `).join('\n\n');
 
     const systemPrompt = `
@@ -46,10 +43,17 @@ export async function POST(req: Request) {
       Be concise and helpful.
     `;
 
-    // 3. GENERATION: Ask Gemini
-    const result = await model.generateContent(systemPrompt);
-    const response = await result.response;
-    const text = response.text();
+    // 3. GENERATION: Use the Factory Model
+    const model = getModel();
+    
+    // Invoke with LangChain standard messages
+    const response = await model.invoke([
+      new SystemMessage("You are a helpful DevOps Assistant."),
+      new HumanMessage(systemPrompt)
+    ]);
+
+    // LangChain returns an object with .content
+    const text = response.content as string;
 
     return NextResponse.json({ reply: text });
 

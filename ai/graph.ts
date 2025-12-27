@@ -11,8 +11,8 @@ const workflow = new StateGraph(AgentState);
 workflow.addNode("risk_node", riskAnalysisNode);
 workflow.addNode("rollback_node", rollbackNode);
 
-// 3. Add Edges (The Flow)
-// We cast to 'any' to silence the strict type checker if it complains
+// 3. Add Edges 
+// We cast to 'any' to silence strict type checks during the transition
 workflow.addEdge(START, "risk_node" as any);
 workflow.addEdge("risk_node" as any, "rollback_node" as any);
 workflow.addEdge("rollback_node" as any, END);

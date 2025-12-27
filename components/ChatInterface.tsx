@@ -35,8 +35,8 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[600px]">
-      <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 flex items-center gap-2">
+    <div className="bg-white rounded-xl shadow-sm border border-pink-200 overflow-hidden flex flex-col h-[600px]">
+      <div className="p-4 bg-gray-50 border-b border-pink-200 font-bold text-gray-700 flex items-center gap-2">
         🤖 Chat with HILDA <span className="text-xs font-normal text-gray-400">(Accessing Long-Term Memory)</span>
       </div>
 
@@ -57,18 +57,18 @@ export default function ChatInterface() {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-gray-100 flex gap-2">
+      <div className="p-4 border-t border-gray-100 flex gap-1">
         <input 
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="Ask about past PRs..."
+          placeholder="Enter your Query..."
           className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button 
           onClick={sendMessage}
           disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-sky-700 disabled:opacity-50"
         >
           Send
         </button>
