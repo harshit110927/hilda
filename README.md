@@ -1,152 +1,139 @@
-# HILDA
+# HILDA:  Human-In-The-Loop Deployment Agent
 
-**Human In the Loop Deployment Agent**
+HILDA is an AI-powered DevOps orchestration tool designed to bridge the gap between continuous integration and confident deployment. It serves as an autonomous Release Manager that reviews code for operational risks, manages deployment approvals, and provides a centralized mission control interface for engineering teams.
 
-HILDA is an intelligent deployment workflow system built with Next.js 15, TypeScript, and Tailwind CSS. It leverages LangGraph for orchestrating complex deployment processes with human oversight and approval checkpoints.
+![HILDA Banner](https://img.shields.io/badge/HILDA-Deployment%20Agent-blue)
+![Node.js](https://img.shields.io/badge/Node.js-v18+-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
 
-## 🚀 Features
+## 📋 Table of Contents
 
-- **🤖 LangGraph Workflows**: State-based deployment orchestration with AI-powered decision making
-- **👥 Human-in-the-Loop**: Critical deployment steps require human approval
-- **🔗 GitHub Integration**: Seamless webhook integration for deployment triggers
-- **🗄️ Supabase Backend**: Persistent storage for deployment state and approval history
-- **⚡ Next.js 15**: Built with the latest Next.js features including App Router and Server Actions
-- **🎨 Tailwind CSS**: Modern, responsive UI components
+- [Problem Statement](#problem-statement)
+- [Solution](#solution)
+- [Technology Stack](#technology-stack)
+- [Installation & Onboarding](#installation--onboarding)
+- [Frequently Asked Questions](#frequently-asked-questions)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 📁 Project Structure
+## 🎯 Problem Statement
 
-```
-hilda/
-├── ai/                      # LangGraph workflows and agent logic
-│   ├── workflows/          # Workflow definitions
-│   ├── nodes/             # Individual workflow nodes
-│   └── README.md
-├── lib/                    # Shared libraries and clients
-│   ├── supabase.ts        # Supabase client configuration
-│   ├── octokit.ts         # GitHub Octokit client
-│   └── README.md
-├── components/             # React UI components
-│   ├── ui/                # Reusable UI components
-│   └── README.md
-├── types/                  # TypeScript type definitions
-│   ├── database.ts        # Database schema types
-│   ├── agent-state.ts     # AgentState for LangGraph
-│   └── README.md
-├── app/                    # Next.js App Router
-│   ├── api/
-│   │   └── webhooks/      # Webhook endpoints
-│   │       └── github/    # GitHub webhook handler
-│   ├── actions/           # Server Actions
-│   │   └── deployments.ts # Deployment management actions
-│   ├── layout.tsx
-│   └── page.tsx
-└── .env.example           # Environment variables template
-```
+In modern software development, a significant gap exists between **"Code Complete"** and **"Production Ready."** While tools like GitHub Copilot assist in writing code, the process of reviewing, verifying, and deploying that code remains fraught with risk and manual overhead.
 
-## 🛠️ Setup
+### Key Challenges: 
+
+1. **Deployment Blindness**: CI/CD pipelines often deploy automatically if tests pass, missing subtle architectural flaws, hardcoded secrets, or logic errors that automated tests cannot catch.
+
+2. **Resource Constraints**: Small to medium-sized teams often lack a dedicated DevOps engineer or Release Manager, forcing senior developers to spend valuable time managing merges and deployments.
+
+3. **Context Switching**: Developers must constantly switch between their IDE, GitHub, and cloud consoles to understand the state of a release. 
+
+## 💡 Solution
+
+HILDA acts as a **virtual Release Manager** that sits between your pull request and your production environment. It does not merely automate tasks; it intelligently orchestrates the release process with human oversight.
+
+### Core Features:
+
+- **Automated Operational Review**: HILDA scans incoming Pull Requests not just for syntax, but for deployment risks—security vulnerabilities, hardcoded secrets, and expensive operations.
+
+- **Human-in-the-Loop Control**: Critical actions (like rejecting a PR or triggering a deployment) are staged in a dashboard, requiring explicit human approval. This ensures automation never outpaces control. 
+
+- **Context-Aware Intelligence**:  Using Retrieval Augmented Generation (RAG), HILDA understands the full context of the repository, allowing it to answer architectural questions and explain why a PR might be risky. 
+
+## 🛠️ Technology Stack
+
+HILDA is built as a self-hosted, full-stack application designed to run locally or on a private server.
+
+| Component | Technology |
+|-----------|-----------|
+| **Runtime Environment** | Node.js |
+| **Framework** | Next.js 16 (App Router) |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS v4 |
+| **Database & Realtime** | Supabase |
+| **AI Orchestration** | LangChain, LangGraph |
+| **LLM Integration** | Google Gemini, OpenAI GPT-4, Anthropic Claude |
+| **Version Control Integration** | GitHub Octokit API |
+
+## 🚀 Installation & Onboarding
+
+HILDA is distributed as a global NPM package. It is designed to be installed once and configured per project. 
 
 ### Prerequisites
 
-- Node.js 20.x or higher
-- npm or yarn
-- A Supabase account
-- A GitHub Personal Access Token
-- An Anthropic API key (for Claude)
+Before installing HILDA, ensure you have: 
 
-### Installation
+- **Node.js** (v18 or higher) installed
+- A **Supabase account** (for database and realtime subscriptions)
+- A **GitHub Personal Access Token** (Classic) with `repo` scope
+- An **API Key** for your preferred AI provider (Google Gemini, OpenAI, or Anthropic)
 
-1. Clone the repository:
-```bash
-git clone https://github.com/harshit110927/hilda.git
-cd hilda
-```
+### Step 1: Global Installation
 
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-```
-
-4. Edit `.env.local` with your credentials:
-```env
-SUPABASE_URL=your-supabase-project-url
-SUPABASE_KEY=your-supabase-anon-key
-ANTHROPIC_API_KEY=your-anthropic-api-key
-GITHUB_TOKEN=your-github-personal-access-token
-```
-
-5. Run the development server:
-```bash
-npm run dev
-```
-
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 🔧 Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-
-### Building for Production
+Open your terminal and install the agent globally: 
 
 ```bash
-npm run build
-npm run start
+npm install -g hilda-agent
 ```
 
-## 🌐 Deployment
+### Step 2: Project Initialization
 
-### Vercel (Recommended)
+Navigate to the root directory of the project you wish to manage (or create a new folder for the dashboard) and run the setup wizard. This interactive tool will securely configure your environment variables and build the local dashboard.
 
-The easiest way to deploy HILDA is using [Vercel](https://vercel.com):
+```bash
+hilda setup
+```
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/harshit110927/hilda)
+Follow the on-screen prompts to enter your API keys. HILDA will encrypt these locally in a `.env` file.
 
-Make sure to configure your environment variables in the Vercel dashboard.
+### Step 3: Launch Mission Control
 
-### Other Platforms
+Once configured, start the dashboard:
 
-HILDA can be deployed to any platform that supports Next.js applications:
-- Netlify
-- Railway
-- AWS Amplify
-- Self-hosted with Docker
+```bash
+hilda start
+```
 
-## 🔐 Environment Variables
+The interface will be accessible at **http://localhost:3000**.
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `SUPABASE_URL` | Your Supabase project URL | Yes |
-| `SUPABASE_KEY` | Your Supabase anon/public key | Yes |
-| `ANTHROPIC_API_KEY` | Anthropic API key for Claude | Yes |
-| `GITHUB_TOKEN` | GitHub Personal Access Token | Yes |
+## ❓ Frequently Asked Questions
 
-## 📚 Technologies
+### How is HILDA different from GitHub Copilot? 
 
-- **Framework**: [Next.js 15](https://nextjs.org/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
-- **AI Orchestration**: [LangGraph](https://github.com/langchain-ai/langgraph)
-- **Database**: [Supabase](https://supabase.com/)
-- **GitHub Integration**: [Octokit](https://github.com/octokit/rest.js)
-- **LLM**: [Anthropic Claude](https://www.anthropic.com/)
+**GitHub Copilot** is a **Coding Assistant**; it lives in your IDE and helps you write syntax and logic. **HILDA** is a **Deployment Agent**; it lives in your release pipeline. While Copilot helps you write the function, HILDA verifies that the function is safe to deploy, doesn't leak secrets, and adheres to project architectural standards.
+
+### Why does HILDA require a database (Supabase)?
+
+HILDA maintains a persistent state of your deployments and PR history. Supabase provides the realtime infrastructure required to update the dashboard instantly when a GitHub webhook event occurs (e.g., a new commit or PR comment), eliminating the need for manual refreshing.
+
+### Is my code sent to a third-party server? 
+
+HILDA is a **self-hosted tool**. Your code resides on your machine and is only sent to the specific LLM provider you choose (e.g., Google or OpenAI) for analysis. It is **not sent to any HILDA-specific cloud**, ensuring data privacy and security.
+
+### Can HILDA modify my code?
+
+HILDA is designed with a **"Safety First" architecture**. It can analyze code and recommend changes, but it **cannot directly write to your repository** without human authorization. The "Reject" and "Deploy" actions in the dashboard utilize your GitHub token to perform actions on your behalf, but **only when you click the button**. 
+
+### Why is the build process triggered after setup?
+
+HILDA uses Next.js, which compiles the application for optimal performance. The build process requires the environment variables (API keys) to be present to configure the API routes securely. The `hilda setup` command ensures these keys are in place before triggering the build, preventing compilation errors.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions to HILDA! Please feel free to submit issues, fork the repository, and create pull requests. 
+
+### Development Setup
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Create a `.env` file with required credentials
+4. Run the development server: `npm run dev`
 
 ## 📄 License
 
 This project is licensed under the terms specified in the LICENSE file.
 
-## 🙏 Acknowledgments
+---
 
-Built with ❤️ using modern web technologies and AI orchestration frameworks.
+**Built with ❤️ for developers who want safe, intelligent deployments**
