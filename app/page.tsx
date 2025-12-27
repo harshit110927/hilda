@@ -1,90 +1,157 @@
-export default function Home() {
+// app/page.tsx
+import { octokit } from "@/lib/github/client";
+import { rejectPR, approvePR } from "./actions";
+import ReactMarkdown from "react-markdown";
+import ChatInterface from "@/components/ChatInterface"; // Import the Chat Component
+
+// Helper to find HILDA's comment
+async function getHildaAnalysis(owner: string, repo: string, prNumber: number) {
+  try {
+    const { data: comments } = await octokit.issues.listComments({
+      owner,
+      repo,
+      issue_number: prNumber,
+    });
+
+    const hildaComment = comments.find((c) => 
+      c.body?.includes("## HILDA Analysis Report")
+    );
+
+    return hildaComment ? hildaComment.body : null;
+  } catch (error) {
+    console.error(`Failed to fetch comments for PR #${prNumber}`, error);
+    return null;
+  }
+}
+
+export default async function Dashboard() {
+  const owner = "harshit110927"; // Your Username
+  const repo = "onboardflow";    // Your Repo
+
+  // 1. Get all Open PRs
+  const { data: pulls } = await octokit.pulls.list({
+    owner,
+    repo,
+    state: "open",
+  });
+
+  // 2. Fetch Analysis for each PR in parallel
+  const prsWithAnalysis = await Promise.all(
+    pulls.map(async (pr) => {
+      const analysis = await getHildaAnalysis(owner, repo, pr.number);
+      return { ...pr, analysis };
+    })
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-16">
-            <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              HILDA
-            </h1>
-            <p className="text-2xl text-zinc-600 dark:text-zinc-400 mb-2">
-              Human In the Loop Deployment Agent
-            </p>
-            <p className="text-lg text-zinc-500 dark:text-zinc-500">
-              Intelligent deployment workflows with human oversight
-            </p>
-          </div>
-
-          {/* Features Grid */}
-          <div className="grid md:grid-cols-2 gap-6 mb-16">
-            <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 shadow-sm border border-zinc-200 dark:border-zinc-700">
-              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-zinc-100">
-                🤖 LangGraph Workflows
-              </h3>
-              <p className="text-zinc-600 dark:text-zinc-400">
-                Orchestrate complex deployment processes using LangGraph&apos;s state machine architecture.
-              </p>
+    <main className="min-h-screen bg-gray-50 p-6 font-sans">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* LEFT COLUMN: Mission Control (The PR List) */}
+        <div className="lg:col-span-2 space-y-6">
+          <header className="mb-6">
+            <h1 className="text-3xl font-extrabold text-gray-900">🛡️ HILDA Mission Control</h1>
+            <div className="flex items-center gap-2 text-gray-500 mt-2">
+               <span>Active Repo:</span>
+               <span className="font-mono font-bold bg-white px-2 py-1 rounded border text-sm">{owner}/{repo}</span>
             </div>
+          </header>
 
-            <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 shadow-sm border border-zinc-200 dark:border-zinc-700">
-              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-zinc-100">
-                👥 Human Oversight
-              </h3>
-              <p className="text-zinc-600 dark:text-zinc-400">
-                Critical deployment steps require human approval before proceeding.
-              </p>
-            </div>
+          <div className="space-y-6">
+            {prsWithAnalysis.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-200">
+                <p className="text-xl text-green-600 font-semibold">✅ All Clear</p>
+                <p className="text-gray-500 mt-2">No pending Pull Requests found.</p>
+              </div>
+            ) : (
+              prsWithAnalysis.map((pr) => (
+                <div key={pr.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
+                  
+                  {/* Header Section */}
+                  <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-start">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800">
+                        <a href={pr.html_url} target="_blank" className="hover:text-blue-600 hover:underline">
+                          #{pr.number}: {pr.title}
+                        </a>
+                      </h2>
+                      <div className="flex items-center gap-3 mt-2 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          👤 <b>{pr.user?.login}</b>
+                        </span>
+                        <span>•</span>
+                        <span className="font-mono bg-gray-200 px-2 py-0.5 rounded text-xs">
+                          {pr.head.ref}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full border border-yellow-200 uppercase tracking-wide">
+                      ⚠️ Review Required
+                    </span>
+                  </div>
 
-            <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 shadow-sm border border-zinc-200 dark:border-zinc-700">
-              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-zinc-100">
-                🔗 GitHub Integration
-              </h3>
-              <p className="text-zinc-600 dark:text-zinc-400">
-                Seamlessly integrate with GitHub repositories and webhooks.
-              </p>
-            </div>
+                  {/* Analysis Body */}
+                  <div className="p-6 bg-white">
+                    {pr.analysis ? (
+                      <div className="bg-red-50 p-6 rounded-lg border border-red-100 text-gray-800">
+                        <ReactMarkdown 
+                          components={{
+                            h1: ({...props}) => <h1 className="text-2xl font-bold mb-4 text-red-800" {...props} />,
+                            h2: ({...props}) => <h2 className="text-xl font-bold mb-3 mt-6 text-gray-900 border-b pb-1 border-red-200" {...props} />,
+                            h3: ({...props}) => <h3 className="text-lg font-semibold mb-2 mt-4 text-gray-800" {...props} />,
+                            p: ({...props}) => <p className="mb-3 leading-relaxed" {...props} />,
+                            ul: ({...props}) => <ul className="list-disc pl-5 mb-4 space-y-1" {...props} />,
+                            li: ({...props}) => <li className="text-gray-700" {...props} />,
+                            code: ({...props}) => <code className="bg-gray-100 text-red-600 px-1 py-0.5 rounded font-mono text-sm" {...props} />,
+                            pre: ({...props}) => <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4 text-sm font-mono" {...props} />,
+                            blockquote: ({...props}) => <blockquote className="border-l-4 border-red-300 pl-4 italic text-gray-600 my-4" {...props} />,
+                          }}
+                        >
+                          {pr.analysis}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 italic p-4 text-center bg-gray-50 rounded-lg">
+                        ⏳ Analysis in progress...
+                      </div>
+                    )}
+                  </div>
 
-            <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 shadow-sm border border-zinc-200 dark:border-zinc-700">
-              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-zinc-100">
-                🗄️ Supabase Backend
-              </h3>
-              <p className="text-zinc-600 dark:text-zinc-400">
-                Store deployment state and approval history in Supabase.
-              </p>
-            </div>
-          </div>
+                  {/* Actions Footer */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-4 justify-end">
+                    <form action={async () => {
+                      "use server";
+                      await rejectPR(owner, repo, pr.number);
+                    }}>
+                      <button className="flex items-center gap-2 bg-white text-red-600 border border-red-200 px-5 py-2.5 rounded-lg hover:bg-red-50 hover:border-red-300 font-bold text-sm transition-colors">
+                        ⛔ REJECT & CLOSE
+                      </button>
+                    </form>
 
-          {/* Project Structure */}
-          <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 shadow-sm border border-zinc-200 dark:border-zinc-700">
-            <h3 className="text-xl font-semibold mb-4 text-zinc-900 dark:text-zinc-100">
-              📁 Project Structure
-            </h3>
-            <div className="font-mono text-sm space-y-1 text-zinc-700 dark:text-zinc-300">
-              <div>├── <span className="text-blue-600 dark:text-blue-400">ai/</span> - LangGraph workflows and nodes</div>
-              <div>├── <span className="text-blue-600 dark:text-blue-400">lib/</span> - Supabase client, Octokit, utilities</div>
-              <div>├── <span className="text-blue-600 dark:text-blue-400">components/</span> - React UI components</div>
-              <div>├── <span className="text-blue-600 dark:text-blue-400">types/</span> - TypeScript type definitions</div>
-              <div>├── <span className="text-blue-600 dark:text-blue-400">app/</span></div>
-              <div>│   ├── <span className="text-blue-600 dark:text-blue-400">api/webhooks/</span> - API webhook endpoints</div>
-              <div>│   └── <span className="text-zinc-500">page.tsx</span> - Main application page</div>
-              <div>└── <span className="text-zinc-500">.env.example</span> - Environment configuration template</div>
-            </div>
-          </div>
-
-          {/* Getting Started */}
-          <div className="mt-8 text-center">
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-              Configure your environment variables and start the development server:
-            </p>
-            <div className="bg-zinc-900 dark:bg-zinc-950 rounded-lg p-4 font-mono text-sm text-zinc-300">
-              <div>cp .env.example .env.local</div>
-              <div className="text-zinc-500 mt-2"># Edit .env.local with your credentials</div>
-              <div className="mt-2">npm run dev</div>
-            </div>
+                    <form action={async () => {
+                      "use server";
+                      await approvePR(owner, repo, pr.number);
+                    }}>
+                      <button className="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 font-bold text-sm shadow-sm hover:shadow transition-all">
+                        ✅ APPROVE & DEPLOY
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
-      </main>
-    </div>
+
+        {/* RIGHT COLUMN: Chat Interface (Sticky) */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6">
+            <ChatInterface />
+          </div>
+        </div>
+
+      </div>
+    </main>
   );
 }
