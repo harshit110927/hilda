@@ -1,12 +1,17 @@
 {
-  "name": "hilda",
-  "version": "0.1.0",
-  "private": true,
+  "name": "hilda-agent",
+  "version": "1.0.0",
+  "description": "AI-Powered DevOps Deployment Agent",
+  "private": false,
+  "bin": {
+    "hilda": "./bin/hilda.js"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup": "node scripts/setup.js"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.3.3",
@@ -23,7 +28,11 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
-    "zod": "^4.2.1"
+    "zod": "^4.2.1",
+    
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

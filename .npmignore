@@ -1,0 +1,6 @@
+.env
+.env.local
+.git
+.github
+node_modules
+src/__tests__

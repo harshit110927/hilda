@@ -1,6 +1,16 @@
-// app/page.tsx
 import { octokit } from "@/lib/github/client";
-import Dashboard from "@/components/Dashboard"; 
+import Dashboard from "@/components/Dashboard";
+
+// 1. Define the Shape of Data
+interface PRData {
+  id: number;
+  number: number;
+  title: string;
+  html_url: string;
+  user: { login: string } | null;
+  head: { ref: string };
+  analysis: string | null;
+}
 
 // Helper to find HILDA's comment
 async function getHildaAnalysis(owner: string, repo: string, prNumber: number) {
@@ -15,8 +25,7 @@ async function getHildaAnalysis(owner: string, repo: string, prNumber: number) {
       c.body?.includes("## HILDA Analysis Report")
     );
 
-    // FIX 1: Ensure we return string or null, never undefined
-    return hildaComment?.body ?? null; 
+    return hildaComment?.body ?? null;
   } catch (error) {
     console.error(`Failed to fetch comments for PR #${prNumber}`, error);
     return null;
@@ -24,36 +33,52 @@ async function getHildaAnalysis(owner: string, repo: string, prNumber: number) {
 }
 
 export default async function Page() {
-  const owner = "harshit110927"; // Your Username
-  const repo = "onboardflow";    // Your Repo
+  const owner = "harshit110927"; // Ideally from env or config
+  const repo = "onboardflow";
 
-  // 1. Get all Open PRs (Server Side)
-  const { data: pulls } = await octokit.pulls.list({
-    owner,
-    repo,
-    state: "open",
-  });
+  let prsWithAnalysis: PRData[] = [];
 
-  // 2. Fetch Analysis
-  const prsWithAnalysis = await Promise.all(
-    pulls.map(async (pr) => {
-      const analysis = await getHildaAnalysis(owner, repo, pr.number);
-      return { 
-        id: pr.id,
-        number: pr.number,
-        title: pr.title,
-        html_url: pr.html_url,
-        user: pr.user ? { login: pr.user.login } : null,
-        head: { ref: pr.head.ref },
-        // FIX 2: Explicitly fallback to null here too, just to be safe
-        analysis: analysis ?? null 
-      };
-    })
-  );
+  try {
+    const { data: pulls } = await octokit.pulls.list({
+      owner,
+      repo,
+      state: "open",
+    });
+
+    prsWithAnalysis = await Promise.all(
+      pulls.map(async (pr) => {
+        const analysis = await getHildaAnalysis(owner, repo, pr.number);
+        return { 
+          id: pr.id,
+          number: pr.number,
+          title: pr.title,
+          html_url: pr.html_url,
+          user: pr.user ? { login: pr.user.login } : null,
+          head: { ref: pr.head.ref },
+          analysis: analysis ?? null 
+        };
+      })
+    );
+  } catch (e) {
+    console.log("⚠️ GitHub connection skipped during build/setup.");
+  }
+
+  // 2. READ ENV VARS AT RUNTIME
+  // These will be empty strings during 'npm install' (fixing the build),
+  // but filled with real keys during 'hilda start'.
+  const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
   return (
-    <main className="min-h-screen bg-green-50 p-6 font-sans">
-      <Dashboard initialPRs={prsWithAnalysis} owner={owner} repo={repo} />
+    <main className="min-h-screen bg-green-100 p-6 font-sans">
+      {/* 3. Pass the keys to the Dashboard */}
+      <Dashboard 
+        initialPRs={prsWithAnalysis} 
+        owner={owner} 
+        repo={repo}
+        supabaseUrl={sbUrl}  // <--- The missing props
+        supabaseKey={sbKey}  // <--- The missing props
+      />
     </main>
   );
 }
