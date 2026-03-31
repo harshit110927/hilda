@@ -121,7 +121,9 @@ HILDA uses Next.js, which compiles the application for optimal performance. The 
 
 ## 🤝 Contributing
 
-We welcome contributions to HILDA! Please feel free to submit issues, fork the repository, and create pull requests. 
+We welcome contributions to HILDA! Please feel free to submit issues, fork the repository, and create pull requests.
+
+Please read [`CONTRIBUTION.md`](CONTRIBUTION.md) before opening an issue or PR.
 
 ### Development Setup
 

@@ -1,20 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import ReactMarkdown from "react-markdown";
 import { rejectPR, approvePR } from "@/app/actions";
 import ChatInterface from "./ChatInterface";
-import { 
-  ShieldAlert, 
-  GitPullRequest, 
-  CheckCircle, 
-  XCircle, 
-  Terminal, 
-  ExternalLink,
-  Lightbulb
-} from "lucide-react";
 
 interface PRData {
   id: number;
@@ -27,176 +18,193 @@ interface PRData {
 }
 
 const FACTS = [
-  { title: "Git Tip", text: "Did you know `git reflog` can save you even after a hard reset? It tracks every HEAD movement.", link: "https://git-scm.com/docs/git-reflog" },
-  { title: "RAG Fact", text: "Retrieval Augmented Generation reduces LLM hallucinations by 60% compared to zero-shot prompting.", link: "https://arxiv.org/abs/2005.11401" },
-  { title: "Security", text: "Hardcoded secrets are the #2 cause of data breaches in 2024. HILDA catches these instantly.", link: "https://owasp.org/Top10/" },
-  { title: "GitHub", text: "You can press '.' on any GitHub repo to open it instantly in a web-based VS Code editor.", link: "https://github.dev" }
+  {
+    title: "Security",
+    text: "Hardcoded secrets are the #2 cause of data breaches in 2024. HILDA catches these instantly.",
+    link: "https://owasp.org/Top10/",
+  },
+  {
+    title: "Auth Bypasses",
+    text: "isAdmin() checks must always verify server-side session data, never user-supplied input.",
+    link: "https://owasp.org/www-community/Broken_Access_Control",
+  },
+  {
+    title: "Blast Radius",
+    text: "HILDA calculates impact scope by tracing what data/users each function can access.",
+    link: "https://martinfowler.com/bliki/RiskBasedSecurityTesting.html",
+  },
+  {
+    title: "Rollback Plans",
+    text: "git revert creates a safe undo commit. Prefer it over git reset on shared branches.",
+    link: "https://git-scm.com/docs/git-revert",
+  },
 ];
 
-// PROPS: Now accepting keys from the Server
-export default function Dashboard({ 
-  initialPRs, 
-  owner, 
+export default function Dashboard({
+  initialPRs,
+  owner,
   repo,
   supabaseUrl,
-  supabaseKey
-}: { 
-  initialPRs: PRData[], 
-  owner: string, 
-  repo: string,
-  supabaseUrl: string,
-  supabaseKey: string
+  supabaseKey,
+}: {
+  initialPRs: PRData[];
+  owner: string;
+  repo: string;
+  supabaseUrl: string;
+  supabaseKey: string;
 }) {
   const router = useRouter();
   const [fact, setFact] = useState(FACTS[0]);
+  const [view, setView] = useState<"auto" | "allclear" | "scanning" | "report">("auto");
 
-  // 1. Initialize Supabase safely inside the component
   const supabase = useMemo(() => {
     if (!supabaseUrl || !supabaseKey) return null;
     return createClient(supabaseUrl, supabaseKey);
   }, [supabaseUrl, supabaseKey]);
 
   useEffect(() => {
-    setFact(FACTS[Math.floor(Math.random() * FACTS.length)]);
+    const interval = setInterval(() => {
+      setFact((prev) => FACTS[(FACTS.findIndex((f) => f.title === prev.title) + 1) % FACTS.length]);
+    }, 6000);
+    return () => clearInterval(interval);
   }, []);
 
-  // 2. Realtime Listener (Only runs if supabase is ready)
   useEffect(() => {
     if (!supabase) return;
 
     const channel = supabase
-      .channel('realtime-pr-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pr_history' }, () => {
-        router.refresh(); 
+      .channel("realtime-pr-updates")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pr_history" }, () => {
+        router.refresh();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [supabase, router]);
 
+  const activePR = initialPRs[0];
+  const autoState = !activePR ? "allclear" : activePR.analysis ? "report" : "scanning";
+  const displayState = view === "auto" ? autoState : view;
+
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20 pt-8">
-      
-      {/* LEFT COLUMN: PR List */}
-      <div className="lg:col-span-2 space-y-6">
-        <header className="mb-8 border-b border-gray-500 pb-4">
-          <div className="flex items-center gap-3">
-            <ShieldAlert className="text-blue-400" size={32} />
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-              HILDA Mission Control
-            </h1>
+    <div className="min-h-screen flex flex-col">
+      <div className="h-[52px] shrink-0 bg-[var(--bg-1)] border-b border-[var(--border)] px-6 flex items-center gap-3.5">
+        <div className="size-7 rounded-[7px] bg-[var(--accent)] text-white font-mono text-[13px] font-semibold flex items-center justify-center">H</div>
+        <span className="font-mono text-sm tracking-[0.2em] font-semibold">HILDA</span>
+        <span className="text-[var(--border-light)] text-lg">/</span>
+        <span className="text-[13px] text-[var(--text-secondary)]">{owner} · {repo}</span>
+        <div className="ml-auto flex items-center gap-4">
+          <div className="flex gap-1">
+            <button className="font-mono text-xs rounded px-3 py-1 border border-[var(--border)] bg-[var(--bg-3)] text-[var(--text-primary)]">Mission Control</button>
+            <button className="font-mono text-xs rounded px-3 py-1 text-[var(--text-muted)] hover:bg-[var(--bg-2)]">History</button>
+            <button className="font-mono text-xs rounded px-3 py-1 text-[var(--text-muted)] hover:bg-[var(--bg-2)]">Settings</button>
           </div>
-          <div className="flex items-center gap-2 text-gray-400 mt-2 font-mono text-sm">
-             {/* Status Indicator logic */}
-             {supabase ? (
-               <span className="bg-green-900 text-green-300 px-2 py-0.5 rounded text-xs font-bold animate-pulse">● ONLINE</span>
-             ) : (
-               <span className="bg-yellow-900 text-yellow-300 px-2 py-0.5 rounded text-xs font-bold">● OFFLINE (NO KEYS)</span>
-             )}
-             <span>{owner}/{repo}</span>
-          </div>
-        </header>
+          <span className={`font-mono text-[11px] tracking-widest rounded-full px-2.5 py-1 border ${supabase ? "bg-[var(--green-bg)] text-[var(--green)] border-[var(--green-border)]" : "bg-[var(--amber-bg)] text-[var(--amber)] border-[var(--amber-border)]"}`}>
+            {supabase ? "● ONLINE" : "● OFFLINE"}
+          </span>
+        </div>
+      </div>
 
-        <div className="space-y-6">
-          {initialPRs.length === 0 ? (
-            <div className="text-center py-20 bg-card rounded-xl border border-gray-600 shadow-lg">
-              <CheckCircle className="mx-auto text-green-500 mb-4" size={48} />
-              <p className="text-xl text-foreground font-semibold">All Clear</p>
-              <p className="text-gray-400 mt-2">No pending Pull Requests found.</p>
+      <div className="flex h-[calc(100vh-52px)] overflow-hidden">
+        <section className="flex-1 overflow-y-auto p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-[var(--text-muted)]">THREAT QUEUE</span>
+            {displayState !== "allclear" && (
+              <span className="font-mono text-[11px] text-[var(--accent)] bg-[var(--accent-bg)] border border-[var(--accent-border)] rounded px-2 py-0.5">1 PENDING</span>
+            )}
+          </div>
+
+          {displayState === "allclear" && (
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-center">
+              <div className="size-12 rounded-full bg-[var(--green-bg)] border border-[var(--green-border)] flex items-center justify-center text-2xl">✓</div>
+              <h2 className="text-base font-medium">All Clear</h2>
+              <p className="text-[13px] text-[var(--text-muted)]">No pending Pull Requests found.</p>
             </div>
-          ) : (
-            initialPRs.map((pr) => (
-              <div key={pr.id} className="bg-card border border-gray-600 rounded-xl shadow-lg overflow-hidden">
-                {/* Header */}
-                <div className="p-5 border-b border-gray-600 bg-[#4a4a4a] flex justify-between items-start">
-                  <div>
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                      <GitPullRequest size={20} className="text-gray-400" />
-                      <a href={pr.html_url} target="_blank" className="hover:text-blue-400 hover:underline">
-                        #{pr.number}: {pr.title}
-                      </a>
-                    </h2>
-                    <div className="flex items-center gap-3 mt-2 text-sm text-gray-400 font-mono">
-                      <span>{pr.user?.login}</span>
-                      <span>•</span>
-                      <span>{pr.head.ref}</span>
-                    </div>
-                  </div>
-                  <div className="bg-yellow-900/50 text-yellow-500 px-3 py-1 rounded-full border border-yellow-700/50 text-xs font-bold">
-                    ⚠️ REVIEW
+          )}
+
+          {activePR && displayState !== "allclear" && (
+            <article className="bg-[var(--bg-1)] border border-[var(--border)] border-l-[3px] border-l-[var(--accent)] rounded-lg overflow-hidden">
+              <div className="px-4 py-3.5 border-b border-[var(--border)] flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-mono text-[var(--text-muted)] mb-1">PR #{activePR.number}</div>
+                  <a href={activePR.html_url} target="_blank" className="text-sm font-semibold truncate block hover:text-[var(--blue)]">
+                    #{activePR.number}: {activePR.title}
+                  </a>
+                  <div className="mt-1 text-[11px] text-[var(--text-muted)] flex items-center gap-2">
+                    <span>{activePR.user?.login}</span><span>•</span><span>{activePR.head.ref}</span>
                   </div>
                 </div>
+                <span className={`font-mono text-[10px] tracking-widest font-semibold px-2.5 py-1 rounded border ${displayState === "scanning" ? "bg-[var(--amber-bg)] text-[var(--amber)] border-[var(--amber-border)]" : "bg-[var(--accent-bg)] text-[var(--accent)] border-[var(--accent-border)]"}`}>
+                  ⚠ REVIEW
+                </span>
+              </div>
 
-                {/* Analysis */}
-                <div className="p-6 bg-card">
-                  {pr.analysis ? (
-                    <div className="bg-[#444444] p-5 rounded-lg border border-gray-500 text-gray-200 prose prose-invert prose-sm max-w-none">
-                      <ReactMarkdown>{pr.analysis}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <div className="text-gray-400 italic p-4 text-center bg-[#444444] rounded-lg animate-pulse">
-                      Running Scan...
-                    </div>
-                  )}
+              {displayState === "scanning" ? (
+                <div className="p-4 space-y-3">
+                  <div className="font-mono text-[10px] tracking-[0.2em] text-[var(--text-muted)]">RUNNING SCAN</div>
+                  <div className="h-1 rounded bg-[var(--bg-3)] overflow-hidden"><div className="h-full w-[75%] bg-[var(--accent)] animate-pulse" /></div>
+                  <div className="space-y-1.5 text-[11px] font-mono">
+                    <p className="text-[var(--green)]">✓ Fetching diff from GitHub</p>
+                    <p className="text-[var(--green)]">✓ Parsing changed files</p>
+                    <p className="text-[var(--text-secondary)]">◌ Running LLM security analysis</p>
+                    <p className="text-[var(--text-muted)]">· Calculating blast radius</p>
+                  </div>
                 </div>
+              ) : (
+                <div className="p-4 bg-[var(--bg-0)]">
+                  <div className="border border-[var(--border)] rounded-md bg-[var(--bg-1)] p-4 text-[12px] text-[var(--text-secondary)] prose prose-invert max-w-none prose-p:text-[var(--text-secondary)] prose-headings:text-[var(--text-primary)]">
+                    <ReactMarkdown>{activePR.analysis ?? "No report generated yet."}</ReactMarkdown>
+                  </div>
+                </div>
+              )}
 
-                {/* Actions */}
-                <div className="px-6 py-4 bg-[#4a4a4a] border-t border-gray-600 flex gap-4 justify-end">
-                  <form action={async () => { await rejectPR(owner, repo, pr.number); }}>
-                    <button className="flex items-center gap-2 text-red-400 border border-red-400/30 px-4 py-2 rounded hover:bg-red-400/10 transition-colors font-bold text-sm">
-                      <XCircle size={16} /> REJECT
-                    </button>
+              <div className="px-4 py-3 border-t border-[var(--border)] bg-[var(--bg-0)] flex items-center justify-between">
+                <span className="text-[11px] font-mono text-[var(--text-muted)]">
+                  {displayState === "scanning"
+                    ? "Automated analysis in progress..."
+                    : "Automated analysis by HILDA · Awaiting human approval"}
+                </span>
+                <div className="flex gap-2">
+                  <form action={async () => { await rejectPR(owner, repo, activePR.number); }}>
+                    <button disabled={displayState === "scanning"} className="font-mono text-[11px] font-semibold rounded px-4 py-1.5 border border-[var(--accent-border)] bg-[var(--accent-bg)] text-[var(--accent)] disabled:opacity-40">✕ Reject</button>
                   </form>
-                  <form action={async () => { await approvePR(owner, repo, pr.number); }}>
-                    <button className="flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded hover:bg-green-600 font-bold text-sm shadow-lg">
-                      <CheckCircle size={16} /> DEPLOY
-                    </button>
+                  <form action={async () => { await approvePR(owner, repo, activePR.number); }}>
+                    <button disabled={displayState === "scanning"} className="font-mono text-[11px] font-semibold rounded px-4 py-1.5 bg-[var(--green)] text-[var(--bg-0)] disabled:opacity-40">✓ Deploy</button>
                   </form>
                 </div>
               </div>
-            ))
+            </article>
           )}
-        </div>
-      </div>
+        </section>
 
-      {/* RIGHT COLUMN */}
-      <div className="lg:col-span-1 space-y-6">
-        <div className="sticky top-6 space-y-6">
+        <aside className="w-[280px] shrink-0 bg-[var(--bg-1)] border-l border-[var(--border)] flex flex-col">
           <ChatInterface />
-
-          {/* Fact Card */}
-          <div className="bg-input-bg border border-gray-600 rounded-xl p-6 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Lightbulb size={64} className="text-yellow-400" />
-            </div>
-            <h3 className="text-yellow-400 font-bold text-sm tracking-wider uppercase mb-2 flex items-center gap-2">
-              <Terminal size={14} /> System Knowledge
-            </h3>
-            <p className="text-foreground font-bold text-lg mb-2">{fact.title}</p>
-            <p className="text-gray-400 text-sm leading-relaxed mb-4">
-              {fact.text}
-            </p>
-            <a 
-              href={fact.link} 
-              target="_blank" 
-              className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-xs font-bold uppercase tracking-wide transition-colors"
-            >
-              Learn More <ExternalLink size={12} />
-            </a>
+          <div className="border-t border-[var(--border)] p-3 bg-[var(--bg-0)]">
+            <div className="font-mono text-[9px] tracking-[0.2em] text-[var(--amber)] mb-1.5">&gt;_ SYSTEM KNOWLEDGE</div>
+            <p className="text-xs font-semibold mb-1">{fact.title}</p>
+            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">{fact.text}</p>
+            <a href={fact.link} target="_blank" className="inline-block mt-1.5 text-[11px] text-[var(--blue)]">LEARN MORE ↗</a>
           </div>
-        </div>
+        </aside>
       </div>
 
-      {/* FOOTER */}
-      <div className="lg:col-span-3 mt-12 pt-8 border-t border-gray-700 text-center">
-        <a 
-          href="https://harshitshukla.codes" 
-          target="_blank" 
-          className="text-gray-500 hover:text-foreground transition-colors text-sm font-mono flex items-center justify-center gap-2"
-        >
-          <span>CREATED BY</span>
-          <span className="font-bold text-blue-400">HARSHITSHUKLA.CODES</span>
-        </a>
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[var(--bg-2)] border border-[var(--border-light)] rounded-lg p-1.5 flex gap-1 shadow-2xl">
+        {[
+          { key: "auto", label: "Auto" },
+          { key: "allclear", label: "All Clear" },
+          { key: "scanning", label: "Scanning" },
+          { key: "report", label: "Report" },
+        ].map((option) => (
+          <button
+            key={option.key}
+            onClick={() => setView(option.key as typeof view)}
+            className={`font-mono text-[10px] rounded px-3 py-1.5 border ${view === option.key ? "bg-[var(--bg-3)] text-[var(--text-primary)] border-[var(--border-light)]" : "text-[var(--text-muted)] border-transparent hover:text-[var(--text-secondary)]"}`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
     </div>
   );

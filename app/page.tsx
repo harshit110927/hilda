@@ -33,8 +33,8 @@ async function getHildaAnalysis(owner: string, repo: string, prNumber: number) {
 }
 
 export default async function Page() {
-  const owner = "harshit110927"; // Ideally from env or config
-  const repo = "onboardflow";
+  const owner = process.env.GITHUB_OWNER || "harshit110927";
+  const repo = process.env.GITHUB_REPO || "onboardflow";
 
   let prsWithAnalysis: PRData[] = [];
 
@@ -70,7 +70,7 @@ export default async function Page() {
   const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
   return (
-    <main className="min-h-screen bg-green-100 p-6 font-sans">
+    <main className="min-h-screen font-sans">
       {/* 3. Pass the keys to the Dashboard */}
       <Dashboard 
         initialPRs={prsWithAnalysis} 
