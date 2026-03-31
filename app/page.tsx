@@ -33,8 +33,8 @@ async function getHildaAnalysis(owner: string, repo: string, prNumber: number) {
 }
 
 export default async function Page() {
-  const owner = "harshit110927"; // Ideally from env or config
-  const repo = "onboardflow";
+  const owner = process.env.GITHUB_OWNER || "harshit110927";
+  const repo = process.env.GITHUB_REPO || "onboardflow";
 
   let prsWithAnalysis: PRData[] = [];
 
