@@ -70,7 +70,7 @@ export default async function Page() {
   const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
   return (
-    <main className="min-h-screen bg-green-100 p-6 font-sans">
+    <main className="min-h-screen font-sans">
       {/* 3. Pass the keys to the Dashboard */}
       <Dashboard 
         initialPRs={prsWithAnalysis} 

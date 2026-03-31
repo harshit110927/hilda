@@ -1,28 +1,56 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #444444;
-  --foreground: #4effdd;
-  --card-bg:#505050;
-  --input-bg:#333333;
+  --bg-0: #0c0d12;
+  --bg-1: #11121a;
+  --bg-2: #181922;
+  --bg-3: #1e2030;
+  --border: #2a2c3e;
+  --border-light: #333549;
+  --text-primary: #e2e4f0;
+  --text-secondary: #8890b0;
+  --text-muted: #4a5070;
+  --accent: #e84040;
+  --accent-bg: rgba(232, 64, 64, 0.08);
+  --accent-border: rgba(232, 64, 64, 0.25);
+  --green: #3ae88a;
+  --green-bg: rgba(58, 232, 138, 0.08);
+  --green-border: rgba(58, 232, 138, 0.2);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245, 158, 11, 0.08);
+  --amber-border: rgba(245, 158, 11, 0.25);
+  --blue: #60a5fa;
+  --background: var(--bg-0);
+  --foreground: var(--text-primary);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #4e;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--bg-0);
+  color: var(--text-primary);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
 }
