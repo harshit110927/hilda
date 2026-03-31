@@ -1,12 +1,17 @@
-// components/ChatInterface.tsx
 "use client";
 
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<{ role: 'user' | 'hilda', content: string }[]>([
-    { role: 'hilda', content: "Hello! I'm HILDA. I remember your recent PRs. Ask me anything (e.g., 'Help me revert PR #3')." }
+  const [messages, setMessages] = useState<
+    { role: "user" | "hilda"; content: string }[]
+  >([
+    {
+      role: "hilda",
+      content:
+        "Hello! I'm HILDA. I remember your recent PRs. Ask me anything — e.g., *Help me revert PR #3*.",
+    },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,64 +20,78 @@ export default function ChatInterface() {
     if (!input.trim()) return;
 
     const userMsg = input;
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setInput("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
+      const res = await fetch("/api/chat", {
+        method: "POST",
         body: JSON.stringify({ message: userMsg }),
       });
       const data = await res.json();
-      
-      setMessages(prev => [...prev, { role: 'hilda', content: data.reply }]);
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'hilda', content: "❌ Sorry, my brain disconnected." }]);
+      setMessages((prev) => [...prev, { role: "hilda", content: data.reply }]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "hilda", content: "Sorry, my brain disconnected." },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-pink-200 overflow-hidden flex flex-col h-[600px]">
-      <div className="p-4 bg-gray-50 border-b border-pink-200 font-bold text-gray-700 flex items-center gap-2">
-        🤖 Chat with HILDA <span className="text-xs font-normal text-gray-400">(Accessing Long-Term Memory)</span>
+    <>
+      <div className="p-3.5 border-b border-[var(--border)] flex items-center gap-2">
+        <div className="h-6 w-6 rounded-full border border-[var(--accent-border)] bg-[var(--accent-bg)] text-[10px] text-[var(--accent)] font-mono font-semibold flex items-center justify-center">
+          H
+        </div>
+        <div>
+          <div className="text-[13px] font-medium text-[var(--text-primary)]">Chat with HILDA</div>
+          <div className="text-[10px] font-mono text-[var(--text-muted)]">{"// Accessing Long-Term Memory"}</div>
+        </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-lg p-3 text-sm ${
-              msg.role === 'user' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              <ReactMarkdown>{msg.content}</ReactMarkdown>
-            </div>
+          <div
+            key={idx}
+            className={`max-w-[88%] rounded-lg px-3 py-2 text-xs leading-6 border ${
+              msg.role === "user"
+                ? "ml-auto bg-[var(--bg-3)] border-[var(--border-light)] text-[var(--text-primary)] rounded-br-sm"
+                : "bg-[var(--bg-2)] border-[var(--border)] text-[var(--text-secondary)] rounded-bl-sm"
+            }`}
+          >
+            <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
         ))}
-        {loading && <div className="text-gray-400 text-xs animate-pulse">HILDA is thinking...</div>}
+        {loading && (
+          <div className="max-w-[88%] rounded-lg rounded-bl-sm px-3 py-2 text-xs border border-[var(--border)] bg-[var(--bg-2)] text-[var(--text-muted)] animate-pulse">
+            ···
+          </div>
+        )}
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 border-t border-gray-100 flex gap-1">
-        <input 
+      <div className="border-t border-[var(--border)] p-2.5 space-y-2">
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="Enter your Query..."
-          className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendMessage())}
+          placeholder="Enter your query..."
+          rows={2}
+          className="w-full resize-none rounded-md border border-[var(--border)] bg-[var(--bg-0)] px-2.5 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--border-light)]"
         />
-        <button 
-          onClick={sendMessage}
-          disabled={loading}
-          className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-sky-700 disabled:opacity-50"
-        >
-          Send
-        </button>
+        <div className="flex justify-end">
+          <button
+            onClick={sendMessage}
+            disabled={loading}
+            className="font-mono text-[11px] font-semibold tracking-wide px-3.5 py-1.5 rounded border border-[var(--border)] bg-[var(--bg-3)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] disabled:opacity-50"
+          >
+            SEND →
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
